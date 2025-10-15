@@ -12,6 +12,7 @@ from config import Config
 from models import Database
 from auth import Auth, login_required
 from email_utils import mail, send_verification_email, send_welcome_email
+import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
