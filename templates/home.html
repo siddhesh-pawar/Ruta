@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Home - Ruta Health{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5 pb-5">
+    <div class="text-center mb-4">
+        <h3>
+            {% if profile and profile.full_name %}
+                Welcome back, {{ profile.full_name.split()[0] }}!
+            {% else %}
+                Welcome back
+            {% endif %}
+        </h3>
+        <h2>Your Daily Decode</h2>
+    </div>
+    
+    <div class="wave-separator mb-4"></div>
+    
+    <h4 class="mb-3">Today's Action Plan</h4>
+    
+    <div class="row g-3">
+        {% for rec in recommendations %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm recommendation-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start mb-2">
+                        <span class="icon-badge">{{ rec.icon }}</span>
+                        <div class="ms-3">
+                            <span class="badge bg-light text-dark mb-2">{{ rec.category }}</span>
+                            <h6 class="card-title">{{ rec.title }}</h6>
+                        </div>
+                    </div>
+                    <p class="card-text small">{{ rec.description }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.wave-separator {
+    height: 60px;
+    background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 60" xmlns="http://www.w3.org/2000/svg"><path d="M0,30 Q300,0 600,30 T1200,30 L1200,60 L0,60 Z" fill="%23f8f9fa"/></svg>') no-repeat center;
+    background-size: cover;
+}
+
+.recommendation-card {
+    transition: transform 0.2s;
+    border: none;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+}
+
+.icon-badge {
+    font-size: 2rem;
+}
+</style>
+{% endblock %}

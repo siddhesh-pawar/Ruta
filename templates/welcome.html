@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Welcome - Ruta Health{% endblock %}
+
+{% block content %}
+<div class="welcome-container">
+    <div class="container text-center py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <h1 class="display-4 mb-4">Ruta Health</h1>
+                <div class="spacer-lg"></div>
+                <h2 class="mb-5">Take control of your holistic health journey</h2>
+                
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('signup') }}" class="btn btn-dark btn-lg rounded-pill">Sign up</a>
+                    <a href="{{ url_for('login') }}" class="btn btn-dark btn-lg rounded-pill">Log in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.welcome-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spacer-lg {
+    height: 200px;
+}
+</style>
+{% endblock %}
