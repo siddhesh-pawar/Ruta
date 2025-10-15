@@ -287,20 +287,23 @@ def tally_webhook():
     """Handle Tally form submission webhook"""
     try:
         data = request.json
-        
-        # Extract user_id from the submission
-        user_id = data.get('fields', {}).get('user_id', {}).get('value')
-        
-        if user_id:
-            # Save submission reference
-            db.save_tally_submission(user_id, {
-                'submission_id': data.get('id'),
-                'submitted_at': data.get('createdAt')
-            })
-            
-            # Process and save the comprehensive intake data
-            process_tally_data(user_id, data)
-        
+           
+        # Extract user_id from hidden fields
+        fields = data.get('data', {}).get('fields', [])
+        user_id = None
+           
+        for field in fields:
+            if field.get('key') == 'question_bdVV96_173643ff-973c-4990-b125-0fe255b0ab67':  # user_id field
+                user_id = field.get('value')
+                break
+           
+        if not user_id:
+            print("WARNING: No user_id found in webhook data")
+            return jsonify({'error': 'Missing user_id'}), 400
+           
+        # Process and save the comprehensive intake data
+        process_tally_data(user_id, data)
+           
         return jsonify({'status': 'success'}), 200
     except Exception as e:
         print(f"Webhook error: {e}")
@@ -361,86 +364,108 @@ from datetime import datetime
 
 def process_tally_data(user_id, tally_data):
     """Process and save Tally form data to comprehensive_intake table"""
+    print("=" * 60)
+    print("PROCESSING TALLY WEBHOOK DATA")
+    print("=" * 60)
+    print(f"Raw webhook payload: {json.dumps(tally_data, indent=2)}")
+    
     try:
-        # Extract fields from tally_data
+        # Extract fields from the nested data structure
         fields_array = tally_data.get('data', {}).get('fields', [])
         
-        print(f"Processing fields for user {user_id}")
+        print(f"\nProcessing {len(fields_array)} fields for user {user_id}")
         
-        # Initialize fields dictionary
+        # Build a dictionary mapping field keys to their values
         fields_dict = {}
         
-        # Check if fields_array is a list (Tally webhook format) or a dict (test format)
         if isinstance(fields_array, list):
-            # Handle Tally webhook format: list of dictionaries
-            print(f"Processing {len(fields_array)} fields (list format)")
             for field in fields_array:
                 key = field.get('key')
                 value = field.get('value')
+                label = field.get('label')
+                
+                print(f"Field: {key} | Label: {label} | Value: {value}")
+                
                 if key:
-                    fields_dict[key] = value
-        elif isinstance(fields_array, dict):
-            # Handle test format: dictionary of key-value pairs
-            print("Processing fields (dict format)")
-            fields_dict = fields_array
+                    # Handle multiple choice - extract the selected option text
+                    if isinstance(value, list) and len(value) > 0:
+                        # Get the options array
+                        options = field.get('options', [])
+                        selected_ids = value
+                        
+                        # Map selected IDs to their text values
+                        selected_texts = []
+                        for opt in options:
+                            if opt.get('id') in selected_ids:
+                                selected_texts.append(opt.get('text'))
+                        
+                        fields_dict[key] = selected_texts if len(selected_texts) > 1 else (selected_texts[0] if selected_texts else None)
+                    else:
+                        fields_dict[key] = value
         
-        print(f"Fields dictionary: {fields_dict}")
+        print(f"\nProcessed fields dictionary:")
+        for k, v in fields_dict.items():
+            print(f"  {k}: {v}")
         
-        # Map Tally field keys to your database columns
+        # Map Tally field keys to database columns based on actual webhook structure
         intake_data = {
             'user_id': user_id,
-            'preferred_name': fields_dict.get('question_123'),  # Update key to match form
-            'birthday': fields_dict.get('question_124'),
-            'location': fields_dict.get('question_125'),
-            'biological_sex': fields_dict.get('question_126'),
-            'goals': fields_dict.get('question_127'),
-            'chronic_conditions': fields_dict.get('question_128'),
-            'medications_supplements': fields_dict.get('question_129'),
-            'pregnancy_status': fields_dict.get('pregnancy_status'),
-            'has_menstrual_cycle': fields_dict.get('has_menstrual_cycle'),
-            'menstrual_symptoms': fields_dict.get('menstrual_symptoms'),
-            'bowel_movement_frequency': fields_dict.get('question_130'),
-            'bowel_movement_type': fields_dict.get('bowel_movement_type'),
-            'digestive_symptoms': fields_dict.get('digestive_symptoms'),
-            'other_symptoms': fields_dict.get('other_symptoms'),
-            'body_temperature': fields_dict.get('body_temperature'),
-            'nervous_system_signals': fields_dict.get('nervous_system_signs'),
-            'energy_pattern': fields_dict.get('question_131'),
-            'sleep_pattern': fields_dict.get('question_132'),
-            'movement_level': fields_dict.get('movement_level'),
-            'appetite_pattern': fields_dict.get('appetite_pattern'),
-            'diet_type': fields_dict.get('diet_type'),
-            'food_allergies': fields_dict.get('food_allergies'),
-            'emotional_patterns': fields_dict.get('emotional_patterns'),
-            'birth_history': fields_dict.get('birth_history'),
-            'past_medications': fields_dict.get('past_medications'),
-            'significant_history': fields_dict.get('significant_history'),
+            'preferred_name': fields_dict.get('question_d9ONWo'),  # "First things first, what would you like us to call you?"
+            'birthday': fields_dict.get('question_Y41R5B'),  # "When's your birthday?"
+            'location': fields_dict.get('question_D7jK4R'),  # "Where are you living?"
+            'biological_sex': fields_dict.get('question_l6xqbk'),  # "What's your biological sex?"
+            'goals': fields_dict.get('question_RDAdG9'),  # "What do you hope to get out of Ruta?"
+            'chronic_conditions': fields_dict.get('question_o2qDbP'),  # "Do you have any chronic conditions?"
+            'medications_supplements': fields_dict.get('question_GRZKxZ'),  # "Are you taking any meds or supplements?"
+            'pregnancy_status': fields_dict.get('question_O76lDR'),  # "Are you pregnant, breastfeeding, or planning to be?"
+            'has_menstrual_cycle': fields_dict.get('question_VzKjLg'),  # "Do you have a menstrual cycle?"
+            'menstrual_symptoms': fields_dict.get('question_Pz7DdV'),  # "Do you experience any of the following related to your menstrual cycle?"
+            'bowel_movement_frequency': fields_dict.get('question_Ex25k4'),  # "How often do you have a bowel movement?"
+            'bowel_movement_type': fields_dict.get('question_roeBjN'),  # "How would you describe your bowel movements?"
+            'digestive_symptoms': fields_dict.get('question_4KMBaX'),  # "Do you notice any of the following related to your digestion?"
+            'other_symptoms': fields_dict.get('question_jljbea'),  # "Do you experience any other symptoms?"
+            'body_temperature': fields_dict.get('question_2KpBjj'),  # "How does your body temperature run?"
+            'nervous_system_signals': fields_dict.get('question_xJAjVr'),  # "Do you notice any of these nervous system signals?"
+            'energy_pattern': fields_dict.get('question_RDAdWd'),  # "How's your energy throughout the day?"
+            'sleep_pattern': fields_dict.get('question_o2qD9e'),  # "How's your sleep?"
+            'movement_level': fields_dict.get('question_GRZKep'),  # "What does your daily movement look like?"
+            'appetite_pattern': fields_dict.get('question_O76lQ7'),  # "How's your appetite lately?"
+            'diet_type': fields_dict.get('question_VzKjpJ'),  # "Do you eat according to a specific diet?"
+            'food_allergies': fields_dict.get('question_Pz7DR5'),  # "Do you have any food allergies or intolerances?"
+            'emotional_patterns': fields_dict.get('question_Ex25qX'),  # "Do you experience any of these emotional or stress patterns?"
+            'birth_history': fields_dict.get('question_roeBDl'),  # "What's your birth history?"
+            'past_medications': fields_dict.get('question_4KMBak'),  # "Have you ever taken any of these in the past?"
+            'significant_history': fields_dict.get('question_jljbex'),  # "Do you have a history of any of the following?"
             'updated_at': datetime.utcnow().isoformat()
         }
         
-        print(f"Prepared intake data: {intake_data}")
+        print("\n" + "=" * 60)
+        print("MAPPED INTAKE DATA")
+        print("=" * 60)
+        for key, value in intake_data.items():
+            print(f"{key}: {value}")
         
         # Check if user already has intake data
         existing = db.get_user_intake_data(user_id)
         
         if existing:
-            print(f"Updating existing intake data for user {user_id}")
+            print(f"\n✓ Updating existing intake data for user {user_id}")
             result = db.supabase.table('comprehensive_intake').update(intake_data).eq('user_id', user_id).execute()
         else:
-            print(f"Creating new intake data for user {user_id}")
+            print(f"\n✓ Creating new intake data for user {user_id}")
             intake_data['id'] = str(uuid.uuid4())
             intake_data['created_at'] = datetime.utcnow().isoformat()
             result = db.supabase.table('comprehensive_intake').insert(intake_data).execute()
         
-        print(f"Database operation result: {result}")
-        print("✓ Successfully saved to comprehensive_intake table")
+        print(f"\n✓ Database operation successful!")
+        print(f"Result: {result}")
+        print("=" * 60)
         
     except Exception as e:
-        print(f"ERROR in process_tally_data: {e}")
+        print(f"\n✗ ERROR in process_tally_data: {e}")
         import traceback
         traceback.print_exc()
         raise
-
 
 
 
