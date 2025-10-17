@@ -259,7 +259,7 @@ def profile():
     # Generate root cause analysis
     root_causes = analyze_root_causes(intake_data)
     
-    return render_template('profile.html', profile=profile, root_causes=root_causes)
+    return render_template('profile.html', profile=profile, root_causes=root_causes, intake_data=intake_data)
 
 @app.route('/explore')
 @login_required
