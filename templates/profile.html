@@ -67,8 +67,34 @@
         </div>
         
         <div class="tab-pane fade" id="history">
-            <p>Your health history and progress.</p>
-        </div>
+    <h4 class="mb-4">Comprehensive Intake History</h4>
+
+    {% if intake_history and intake_history|length > 0 %}
+       {% for record in intake_history %}
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5>🗓️Submitted on {{ record.created_at[:19] | replace("T", " ") }}</h5>
+        <p><strong>Preferred Name:</strong> {{ record.preferred_name or 'N/A' }}</p>
+        <p><strong>Birthday:</strong> {{ record.birthday or 'N/A' }}</p>
+        <p><strong>Location:</strong> {{ record.location or 'N/A' }}</p>
+        <p><strong>Biological Sex:</strong> {{ record.biological_sex or 'N/A' }}</p>
+        <p><strong>Goals:</strong> {{ record.goals or 'N/A' }}</p>
+        <p><strong>Chronic Conditions:</strong> {{ record.chronic_conditions or 'N/A' }}</p>
+        <p><strong>Medications and Supplements:</strong> {{ record.medications_supplements or 'N/A'}}</p>
+        <p><strong>Sleep Pattern:</strong> {{ record.sleep_pattern or 'N/A' }}</p>
+        <p><strong>Energy Pattern:</strong> {{ record.energy_pattern or 'N/A' }}</p>
+        <p><strong>Digestive Symptoms:</strong> {{ record.digestive_symptoms or 'N/A' }}</p>
+        <p><strong>Diet Type:</strong> {{ record.diet_type or 'N/A' }}</p>
+        <p><strong>Updated At:</strong> {{ record.updated_at[:19] | replace("T", " ") }}</p>
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>No intake history found.</p>
+{% endif %}
+
+</div>
+
     </div>
 </div>
 {% endblock %}
