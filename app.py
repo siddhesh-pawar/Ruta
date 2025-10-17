@@ -254,12 +254,25 @@ def profile():
     """User profile page"""
     user_id = session.get('user_id')
     profile = db.get_user_profile(user_id)
-    intake_data = db.get_user_intake_data(user_id)
-    
-    # Generate root cause analysis
-    root_causes = analyze_root_causes(intake_data)
-    
-    return render_template('profile.html', profile=profile, root_causes=root_causes, intake_data=intake_data)
+
+    # Fetch all intake records (history)
+    intake_history = db.supabase.table('comprehensive_intake') \
+        .select('*') \
+        .eq('user_id', user_id) \
+        .order('created_at', desc=True) \
+        .execute() \
+        .data
+
+    # Use the latest one for analysis (optional)
+    latest_intake = intake_history[0] if intake_history else None
+    root_causes = analyze_root_causes(latest_intake)
+
+    return render_template(
+        'profile.html',
+        profile=profile,
+        root_causes=root_causes,
+        intake_history=intake_history
+    )
 
 @app.route('/explore')
 @login_required

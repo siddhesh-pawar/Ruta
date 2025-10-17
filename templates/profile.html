@@ -69,65 +69,30 @@
         <div class="tab-pane fade" id="history">
     <h4 class="mb-4">Comprehensive Intake History</h4>
 
-    {% if intake_data and intake_data|length > 0 %}
-        <div class="timeline">
-            {% for record in intake_data %}
-            <div class="card mb-4 shadow-sm border-0 rounded-3">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        Submitted on {{ record.created_at }}
-                    </h5>
-                    <hr>
+    {% if intake_history and intake_history|length > 0 %}
+       {% for record in intake_history %}
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5>🗓️Submitted on {{ record.created_at[:19] | replace("T", " ") }}</h5>
+        <p><strong>Preferred Name:</strong> {{ record.preferred_name or 'N/A' }}</p>
+        <p><strong>Birthday:</strong> {{ record.birthday or 'N/A' }}</p>
+        <p><strong>Location:</strong> {{ record.location or 'N/A' }}</p>
+        <p><strong>Biological Sex:</strong> {{ record.biological_sex or 'N/A' }}</p>
+        <p><strong>Goals:</strong> {{ record.goals or 'N/A' }}</p>
+        <p><strong>Chronic Conditions:</strong> {{ record.chronic_conditions or 'N/A' }}</p>
+        <p><strong>Medications and Supplements:</strong> {{ record.medications_supplements or 'N/A'}}</p>
+        <p><strong>Sleep Pattern:</strong> {{ record.sleep_pattern or 'N/A' }}</p>
+        <p><strong>Energy Pattern:</strong> {{ record.energy_pattern or 'N/A' }}</p>
+        <p><strong>Digestive Symptoms:</strong> {{ record.digestive_symptoms or 'N/A' }}</p>
+        <p><strong>Diet Type:</strong> {{ record.diet_type or 'N/A' }}</p>
+        <p><strong>Updated At:</strong> {{ record.updated_at[:19] | replace("T", " ") }}</p>
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>No intake history found.</p>
+{% endif %}
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Preferred Name:</strong> {{ record.preferred_name }}</p>
-                            <p><strong>Birthday:</strong> {{ record.birthday }}</p>
-                            <p><strong>Location:</strong> {{ record.location }}</p>
-                            <p><strong>Biological Sex:</strong> {{ record.biological_sex or 'N/A' }}</p>
-                            <p><strong>Goals:</strong> {{ record.goals or 'N/A' }}</p>
-                            <p><strong>Chronic Conditions:</strong> {{ record.chronic_conditions or 'N/A' }}</p>
-                            <p><strong>Medications/Supplements:</strong> {{ record.medications_supplements or 'N/A' }}</p>
-                            <p><strong>Pregnancy Status:</strong> {{ record.pregnancy_status or 'N/A' }}</p>
-                            <p><strong>Has Menstrual Cycle:</strong> {{ record.has_menstrual_cycle or 'N/A' }}</p>
-                            <p><strong>Menstrual Symptoms:</strong> {{ record.menstrual_symptoms or 'N/A' }}</p>
-                            <p><strong>Bowel Movement Frequency:</strong> {{ record.bowel_movement_frequency or 'N/A' }}</p>
-                            <p><strong>Bowel Movement Type:</strong> {{ record.bowel_movement_type or 'N/A' }}</p>
-                            <p><strong>Digestive Symptoms:</strong> {{ record.digestive_symptoms or 'N/A' }}</p>
-                            <p><strong>Other Symptoms:</strong> {{ record.other_symptoms or 'N/A' }}</p>
-                        </div>
-
-                        <div class="col-md-6">
-                            <p><strong>Body Temperature:</strong> {{ record.body_temperature or 'N/A' }}</p>
-                            <p><strong>Nervous System Signals:</strong> {{ record.nervous_system_signals or 'N/A' }}</p>
-                            <p><strong>Energy Pattern:</strong> {{ record.energy_pattern or 'N/A' }}</p>
-                            <p><strong>Sleep Pattern:</strong> {{ record.sleep_pattern or 'N/A' }}</p>
-                            <p><strong>Movement Level:</strong> {{ record.movement_level or 'N/A' }}</p>
-                            <p><strong>Appetite Pattern:</strong> {{ record.appetite_pattern or 'N/A' }}</p>
-                            <p><strong>Diet Type:</strong> {{ record.diet_type or 'N/A' }}</p>
-                            <p><strong>Food Allergies:</strong> {{ record.food_allergies or 'N/A' }}</p>
-                            <p><strong>Emotional Patterns:</strong> {{ record.emotional_patterns or 'N/A' }}</p>
-                            <p><strong>Birth History:</strong> {{ record.birth_history or 'N/A' }}</p>
-                            <p><strong>Past Medications:</strong> {{ record.past_medications or 'N/A' }}</p>
-                            <p><strong>Significant History:</strong> {{ record.significant_history or 'N/A' }}</p>
-                        </div>
-                    </div>
-
-                    <div class="text-muted small mt-3">
-                        <p class="mb-0">
-                            🧾 Submission ID: {{ record.tally_submission_id or '—' }}
-                        </p>
-                        <p class="mb-0">
-                            Last Updated: {{ record.updated_at }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p>No intake history found yet.</p>
-    {% endif %}
 </div>
 
     </div>
