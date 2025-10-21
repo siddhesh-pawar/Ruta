@@ -42,190 +42,72 @@ def welcome():
     """Welcome page for non-authenticated users"""
     return render_template('welcome.html')
 
-"""
+  
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        full_name = request.form.get('full_name')
-        
-        # Sign up user
-        response = auth.sign_up(email, password)
-        
-        if 'error' in response:
-            flash(f'Signup failed: {response["error"]}', 'danger')
-            return redirect(url_for('signup'))
-        
-        if response.user:
-            # Create user profile
-            user_id = response.user.id
-            db.create_user_profile(user_id, email, full_name)
-            
-            # Generate and store verification token
-            token = secrets.token_urlsafe(32)
-            verification_tokens[token] = {
-                'user_id': user_id,
-                'email': email,
-                'expires': datetime.utcnow() + timedelta(hours=24)
-            }
-            
-            # Send verification email
-            if send_verification_email(email, token):
-                flash('Account created! Please check your email to verify your account.', 'success')
-            else:
-                flash('Account created but verification email failed. Please contact support.', 'warning')
-            
-            return redirect(url_for('login'))
-    
-    return render_template('signup.html')
+        email = request.form['email']
 
-"""
+        res = auth.send_magic_link(
+            email,
+            redirect_url=url_for('login', _external=True)
+        )
 
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    """User signup with email verification"""
-    if request.method == 'POST':
-        # Debug: Print all form data
-        print("=" * 50)
-        print("SIGNUP FORM SUBMISSION")
-        print("=" * 50)
-        print(f"All form data: {dict(request.form)}")
-        
-        email = request.form.get('email')
-        password = request.form.get('password')
-        full_name = request.form.get('full_name')
-        
-        print(f"Extracted values:")
-        print(f"  - Email: {email}")
-        print(f"  - Password: {'*' * len(password) if password else 'None'}")
-        print(f"  - Full name: '{full_name}' (type: {type(full_name)}, length: {len(full_name) if full_name else 0})")
-        
-        # Check if full_name is empty
-        if not full_name:
-            print("WARNING: full_name is None or empty!")
-            full_name = email.split('@')[0] if email else "User"
-            print(f"Using fallback full_name: {full_name}")
-        elif full_name.strip() == '':
-            print("WARNING: full_name contains only whitespace!")
-            full_name = email.split('@')[0] if email else "User"
-            print(f"Using fallback full_name: {full_name}")
-        
-        # Sign up user with Supabase Auth
-        print(f"\nCalling auth.sign_up for email: {email}")
-        response = auth.sign_up(email, password)
-        
-        if 'error' in response:
-            print(f"ERROR: Signup failed - {response['error']}")
-            flash(f'Signup failed: {response["error"]}', 'danger')
-            return redirect(url_for('signup'))
-        
-        if response.user:
-            user_id = response.user.id
-            print(f"SUCCESS: User created with ID: {user_id}")
-            
-            # Create user profile
-            print(f"\nCreating profile:")
-            print(f"  - user_id: {user_id}")
-            print(f"  - email: {email}")
-            print(f"  - full_name: '{full_name}'")
-            
-            profile_result = db.create_user_profile(user_id, email, full_name)
-            
-            if profile_result:
-                print(f"SUCCESS: Profile created - {profile_result}")
-                
-                # Verify what was actually saved
-                saved_profile = db.get_user_profile(user_id)
-                if saved_profile:
-                    print(f"\nVERIFICATION - Profile in database:")
-                    print(f"  - id: {saved_profile.get('id')}")
-                    print(f"  - email: {saved_profile.get('email')}")
-                    print(f"  - full_name: '{saved_profile.get('full_name')}'")
-                    print(f"  - created_at: {saved_profile.get('created_at')}")
-            else:
-                print("ERROR: Failed to create profile!")
-            
-            # Generate and store verification token
-            token = secrets.token_urlsafe(32)
-            verification_tokens[token] = {
-                'user_id': user_id,
-                'email': email,
-                'expires': datetime.utcnow() + timedelta(hours=24)
-            }
-            
-            # Send verification email
-            if send_verification_email(email, token):
-                flash('Account created! Please check your email to verify your account.', 'success')
-            else:
-                flash('Account created but verification email failed. Please contact support.', 'warning')
-            
-            print("=" * 50)
-            print("SIGNUP COMPLETE")
-            print("=" * 50)
-            
-            return redirect(url_for('login'))
-    
+        flash('Check your email for the signup link.', 'info')
+        return redirect(url_for('login'))
     return render_template('signup.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login"""
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        response = auth.sign_in(email, password)
-        
-        if 'error' in response:
-            flash('Invalid email or password', 'danger')
-            return redirect(url_for('login'))
-        
-        if response.user:
-            session['user_id'] = response.user.id
-            session['email'] = response.user.email
-            session['access_token'] = response.session.access_token
-            
-            # Check if user has completed intake form
-            intake_data = db.get_user_intake_data(response.user.id)
-            
-            if not intake_data:
-                # First time user - redirect to Tally form
-                return redirect(url_for('tally_form'))
-            else:
-                # Returning user - go to home
-                return redirect(url_for('home'))
-    
+        email = request.form['email']
+        res = auth.send_magic_link(email, redirect_url=url_for('login', _external=True))
+        flash('Check your email for the login link.', 'info')
+        return redirect(url_for('login'))
     return render_template('login.html')
 
-@app.route('/verify-email/<token>')
-def verify_email(token):
-    """Verify email with token"""
-    if token in verification_tokens:
-        token_data = verification_tokens[token]
+
+@app.route("/verify_token", methods=["POST"])
+def verify_token():
+    """Verify Supabase magic link tokens and log user in."""
+    data = request.get_json()
+    access_token = data.get("access_token")
+    refresh_token = data.get("refresh_token")
+
+    if not access_token:
+        return jsonify({"success": False, "error": "Missing access token"}), 400
+
+    try:
+        auth.supabase.auth.set_session(access_token, refresh_token)
+        user = auth.supabase.auth.get_user()
         
-        # Check if token expired
-        if datetime.utcnow() > token_data['expires']:
-            del verification_tokens[token]
-            flash('Verification link has expired. Please sign up again.', 'danger')
-            return redirect(url_for('signup'))
+        if user and getattr(user, "user", None):
+            user_id = user.user.id
+            user_email = user.user.email
+
+            # ✅ Save in session
+            session["user_id"] = user_id
+            session["email"] = user_email
+
+            if not db.get_user_profile(user_id):
+                db.create_user_profile(user_id, user_email)
+
+            intake_data = db.get_user_intake_data(user_id)
+
+            if not intake_data:
+                return jsonify({"success": True, "redirect": url_for('tally_form')})
+            else:
+                return jsonify({"success": True, "redirect": url_for('home')})
+        else:
+            return jsonify({"success": False, "error": "Invalid user"})
+            
+    except Exception as e:
+        print(f"Verification error: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+
         
-        # Mark user as verified (update profile)
-        db.update_user_profile(token_data['user_id'], {'email_verified': True})
-        
-        # Send welcome email
-        send_welcome_email(token_data['email'], token_data['email'].split('@')[0])
-        
-        # Clean up token
-        del verification_tokens[token]
-        
-        flash('Email verified successfully! You can now log in.', 'success')
-        return redirect(url_for('login'))
-    
-    flash('Invalid verification link.', 'danger')
-    return redirect(url_for('signup'))
 
 @app.route('/logout')
 def logout():
@@ -323,54 +205,6 @@ def tally_webhook():
         return jsonify({'error': str(e)}), 400
     
 
-# def process_tally_data(user_id, tally_data):
-#     """Process and save Tally form data to comprehensive_intake table"""
-#     try:
-#         # Extract all fields from Tally response
-#         fields = tally_data.get('fields', {})
-        
-#         intake_data = {
-#             'user_id': user_id,
-#             'preferred_name': fields.get('preferred_name', {}).get('value'),
-#             'birthday': fields.get('birthday', {}).get('value'),
-#             'location': fields.get('location', {}).get('value'),
-#             'biological_sex': fields.get('biological_sex', {}).get('value'),
-#             'goals': fields.get('goals', {}).get('value'),
-#             'chronic_conditions': fields.get('chronic_conditions', {}).get('value'),
-#             'medications_supplements': fields.get('medications_supplements', {}).get('value'),
-#             'pregnancy_status': fields.get('pregnancy_status', {}).get('value'),
-#             'has_menstrual_cycle': fields.get('has_menstrual_cycle', {}).get('value'),
-#             'menstrual_symptoms': fields.get('menstrual_symptoms', {}).get('value'),
-#             'bowel_movement_frequency': fields.get('bowel_movement_frequency', {}).get('value'),
-#             'bowel_movement_type': fields.get('bowel_movement_type', {}).get('value'),
-#             'digestive_symptoms': fields.get('digestive_symptoms', {}).get('value'),
-#             'other_symptoms': fields.get('other_symptoms', {}).get('value'),
-#             'body_temperature': fields.get('body_temperature', {}).get('value'),
-#             'nervous_system_signs': fields.get('nervous_system_signs', {}).get('value'),
-#             'energy_pattern': fields.get('energy_pattern', {}).get('value'),
-#             'sleep_pattern': fields.get('sleep_pattern', {}).get('value'),
-#             'movement_level': fields.get('movement_level', {}).get('value'),
-#             'appetite_pattern': fields.get('appetite_pattern', {}).get('value'),
-#             'diet_type': fields.get('diet_type', {}).get('value'),
-#             'food_allergies': fields.get('food_allergies', {}).get('value'),
-#             'emotional_patterns': fields.get('emotional_patterns', {}).get('value'),
-#             'birth_history': fields.get('birth_history', {}).get('value'),
-#             'past_medications': fields.get('past_medications', {}).get('value'),
-#             'significant_history': fields.get('significant_history', {}).get('value'),
-#             'updated_at': datetime.utcnow().isoformat()
-#         }
-        
-#         # Update comprehensive_intake table
-#         existing = db.get_user_intake_data(user_id)
-#         if existing:
-#             db.supabase.table('comprehensive_intake').update(intake_data).eq('user_id', user_id).execute()
-#         else:
-#             intake_data['id'] = str(uuid.uuid4())
-#             intake_data['created_at'] = datetime.utcnow().isoformat()
-#             db.supabase.table('comprehensive_intake').insert(intake_data).execute()
-        
-#     except Exception as e:
-#         print(f"Error processing Tally data: {e}")
 
 import uuid
 from datetime import datetime

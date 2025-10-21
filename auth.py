@@ -10,58 +10,63 @@ class Auth:
             Config.SUPABASE_URL,
             Config.SUPABASE_ANON_KEY
         )
-    
-    def sign_up(self, email, password):
-        """Sign up a new user"""
+
+    def send_magic_link(self, email, redirect_url=None):
+   
         try:
-            response = self.supabase.auth.sign_up({
-                'email': email,
-                'password': password
-            })
+            body = {
+            "email": email,
+            "create_user": True,  # make sure Supabase creates new users
+        }
+
+    
+
+        # `redirect_to` must be passed separately
+            response = self.supabase.auth._request(
+            "POST",
+            "otp",
+            body=body,
+            redirect_to=redirect_url or Config.REDIRECT_URL,
+            xform=None,  # optional transform
+        )
+
             return response
         except Exception as e:
-            return {'error': str(e)}
-    
-    def sign_in(self, email, password):
-        """Sign in an existing user"""
-        try:
-            response = self.supabase.auth.sign_in_with_password({
-                'email': email,
-                'password': password
-            })
-            return response
-        except Exception as e:
-            return {'error': str(e)}
-    
-    def sign_out(self):
-        """Sign out the current user"""
-        try:
-            response = self.supabase.auth.sign_out()
-            return response
-        except Exception as e:
-            return {'error': str(e)}
-    
-    def get_user(self):
-        """Get the current user"""
-        try:
-            user = self.supabase.auth.get_user()
-            return user
-        except Exception:
-            return None
-    
-    def verify_email(self, token):
-        """Verify email with token"""
+            print(f"Error sending magic link: {e}")
+            return {"error": str(e)}
+
+
+    def verify_otp(self, email, token):
+        """Verify the OTP/magic link token from email"""
         try:
             response = self.supabase.auth.verify_otp({
+                'email': email,
                 'token': token,
-                'type': 'email'
+                'type': 'magiclink'
             })
             return response
         except Exception as e:
             return {'error': str(e)}
 
+    def get_user(self):
+        """Get the current user session"""
+        try:
+            user = self.supabase.auth.get_user()
+            return user
+        except Exception:
+            return None
+
+    def sign_out(self):
+        """Sign out the user"""
+        try:
+            self.supabase.auth.sign_out()
+            session.pop('user_id', None)
+            return {'success': True}
+        except Exception as e:
+            return {'error': str(e)}
+
 def login_required(f):
-    """Decorator to require login for routes"""
+    """Decorator for routes requiring authentication"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
@@ -71,5 +76,5 @@ def login_required(f):
     return decorated_function
 
 def generate_verification_token():
-    """Generate a secure verification token"""
+    """Generate a secure random token (not used by Supabase magic links)"""
     return secrets.token_urlsafe(32)
