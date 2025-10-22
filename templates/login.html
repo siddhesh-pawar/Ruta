@@ -3,34 +3,91 @@
 
 {% block content %}
 <div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow">
-                <div class="card-body p-4">
-                    <h2 class="text-center mb-4">Welcome Back</h2>
-                    
-                    <form method="POST" action="{{ url_for('login') }}">
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Log In</button>
-                        </div>
-                    </form>
-                    
-                    <p class="text-center mt-3">
-                        Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a>
-                    </p>
-                </div>
+  <div class="row justify-content-center">
+    <div class="col-md-5">
+      <div class="card shadow">
+        <div class="card-body p-4">
+          <h2 class="text-center mb-4">Welcome Back</h2>
+
+          <form method="POST" action="{{ url_for('login') }}">
+            <div class="mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                placeholder="you@example.com"
+                required
+              >
             </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">Send Login Link</button>
+            </div>
+          </form>
+
+          <div class="text-center mt-3 text-muted">
+            <small>We'll send you a magic link to log in securely. No password needed.</small>
+          </div>
+
+          <p class="text-center mt-4">
+            Don't have an account?
+            <a href="{{ url_for('signup') }}">Sign up</a>
+          </p>
         </div>
+      </div>
+
+      <!-- Loading spinner (hidden by default) -->
+      <div id="loading-spinner" class="text-center mt-3" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Verifying...</span>
+        </div>
+        <p class="mt-2 text-muted">Verifying your login...</p>
+      </div>
     </div>
+  </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const hash = window.location.hash.substring(1);
+  const params = new URLSearchParams(hash);
+
+  if (params.has("access_token")) {
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+
+    // Show loading spinner
+    const spinner = document.getElementById("loading-spinner");
+    if (spinner) spinner.style.display = "block";
+
+    fetch("/verify_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      })
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          // Redirect to the URL returned by the backend
+          // This will be either /tally-form or /home
+          window.location.href = data.redirect;
+        } else {
+          // Hide spinner and show error
+          if (spinner) spinner.style.display = "none";
+          alert("Verification failed: " + (data.error || "Unknown error"));
+        }
+      })
+      .catch((error) => {
+        // Hide spinner and show error
+        if (spinner) spinner.style.display = "none";
+        alert("Network error verifying token: " + error.message);
+      });
+  }
+});
+</script>
 {% endblock %}
