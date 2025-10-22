@@ -307,6 +307,14 @@ def process_tally_data(user_id, tally_data):
         print(f"\n✓ Database operation successful!")
         print(f"Result: {result}")
         print("=" * 60)
+
+        # ✅ NEW STEP: Update user's profile.full_name with preferred_name (if available)
+        preferred_name = intake_data.get('preferred_name')
+        if preferred_name:
+            print(f"\n✅ Updating profile full_name for user {user_id} → {preferred_name}")
+            db.update_user_profile(user_id, {'full_name': preferred_name})
+        else:
+            print(f"\n⚠️ No preferred_name found in intake_data, skipping profile update")
         
     except Exception as e:
         print(f"\n✗ ERROR in process_tally_data: {e}")
