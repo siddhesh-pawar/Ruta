@@ -177,6 +177,11 @@ def tally_form():
     
     return render_template('tally_form.html', prefill_data=prefill_data)
 
+# Add this to your app.py file
+
+# Store recent webhook submissions in memory (or use Redis in production)
+recent_submissions = {}
+
 @app.route('/tally-webhook', methods=['POST'])
 def tally_webhook():
     """Handle Tally form submission webhook"""
@@ -188,7 +193,7 @@ def tally_webhook():
         user_id = None
            
         for field in fields:
-            if field.get('key') == 'question_bdVV96_173643ff-973c-4990-b125-0fe255b0ab67':  # user_id field
+            if field.get('key') == 'question_bdVV96_173643ff-973c-4990-b125-0fe255b0ab67':
                 user_id = field.get('value')
                 break
            
@@ -198,11 +203,48 @@ def tally_webhook():
            
         # Process and save the comprehensive intake data
         process_tally_data(user_id, data)
+        
+        # Mark submission as complete for this user
+        recent_submissions[user_id] = {
+            'completed': True,
+            'timestamp': datetime.utcnow().isoformat()
+        }
            
         return jsonify({'status': 'success'}), 200
     except Exception as e:
         print(f"Webhook error: {e}")
         return jsonify({'error': str(e)}), 400
+
+
+@app.route('/check-submission-status/<user_id>')
+@login_required
+def check_submission_status(user_id):
+    """Check if user's Tally form has been processed"""
+    # Verify the requesting user matches the user_id
+    if session.get('user_id') != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Check if we have intake data for this user
+    intake_data = db.get_user_intake_data(user_id)
+    
+    if intake_data:
+        return jsonify({
+            'completed': True,
+            'has_intake_data': True
+        })
+    
+    # Check recent submissions
+    if user_id in recent_submissions:
+        return jsonify({
+            'completed': True,
+            'has_intake_data': False,
+            'processing': True
+        })
+    
+    return jsonify({
+        'completed': False,
+        'has_intake_data': False
+    })
     
 
 
