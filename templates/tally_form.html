@@ -68,30 +68,34 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Log for debugging
-    console.log('Tally form loading with:', {
-        user_id: "{{ prefill_data.user_id }}",
-        email: "{{ prefill_data.email }}"
-    });
-    
-    // Listen for form completion
-    window.addEventListener('message', function(event) {
-        if (event.origin !== 'https://tally.so') return;
-        
-        console.log('Message from Tally:', event.data);
-        
-        if (event.data && (
-            event.data.event === 'Tally.FormSubmitted' || 
-            event.data.type === 'Tally.FormSubmitted'
-        )) {
-            console.log('Form submitted successfully!');
-            setTimeout(function() {
-                window.location.href = "/home";
-            }, 1500);
-        }
-    });
-    </script>
+  // Log for debugging
+  console.log('Tally form loading with:', {
+    user_id: "{{ prefill_data.user_id }}",
+    email: "{{ prefill_data.email }}"
+  });
+
+  // Listen for form completion events from Tally
+  window.addEventListener('message', function(event) {
+    // Ensure message is from Tally
+    if (!event.origin.includes('tally.so')) return;
+
+    // Debug the message
+    console.log('Message from Tally:', event.data);
+
+    // Check for form submission event
+    if (
+      event.data?.event === 'Tally.FormSubmitted' ||
+      event.data?.type === 'TALLY_FORM_SUBMITTED'
+    ) {
+      console.log('✅ Tally form submitted — redirecting to /home...');
+      // Delay slightly so user sees the success message
+      setTimeout(function() {
+        window.location.href = "{{ url_for('home') }}";
+      }, 1500);
+    }
+  });
+</script>
+
 </body>
 </html>
